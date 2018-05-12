@@ -2,7 +2,7 @@ const fs = require('fs')
 const path = require('path')
 const events = require('events')
 const Loader = require('./loader')
-const { subclass_prefix, template_engine, templates } = require(path.join(global.application, 'config', 'config.js'))
+const { subclass_prefix, template_engine, templates, models = [] } = require(path.join(global.application, 'config', 'config.js'))
 
 module.exports = app => {
 
@@ -20,16 +20,34 @@ module.exports = app => {
 
 		constructor(ctx) {
 			this.ctx = ctx
-			this.load = new Loader(app, ctx)			
+
+			const loadedModels = []
+			//加载默认model
+			if (models.length) { 
+				models.map(modelName => { 
+					const modelFile = path.join(global.application, 'models', modelName + '.js')		
+					if (fs.existsSync(modelFile)) {
+						const Model = require(modelFile)
+						this[modelName] = new Model(ctx)
+						loadedModels.push(modelName)
+					}		
+				})
+			}
+
+			this.load = new Loader(app, ctx, loadedModels)			
 			// 动态修改的模板引擎
 			this.template_engine = null
+
+			//加载model
 			global.emitter.on('load.model', (name, model) => {
 				this[name] = model
 			})
 			
+			//加载模板
 			global.emitter.on('load.template', (engine) => { 
 				this.template_engine = engine
 			})
+			
 		}
 
 		async view(template, data = {}) {

@@ -4,10 +4,10 @@ const { templates } = require(path.join(global.application, 'config', 'config.js
 
 module.exports = class {
 
-	constructor(app,ctx) {
+	constructor(app, ctx, loadedModels = []) {		
 		this.app = app
 		this.ctx = ctx
-		this.models = {}
+		this.models = [...loadedModels]			
 		this.databases = []
 	}
 
@@ -17,7 +17,7 @@ module.exports = class {
 	 */
 	model(name) { 
 		const modelFile = path.join(global.application, 'models', name + '.js')		
-		if (fs.existsSync(modelFile) && !this.models.hasOwnProperty(name)) {
+		if (fs.existsSync(modelFile) && this.models.indexOf(name) === -1) {
 			const Model = require(modelFile)			
 			global.emitter.emit('load.model', name, new Model(this.ctx))			
 		}				
